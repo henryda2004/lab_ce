@@ -43,7 +43,7 @@ class DatabaseHelper {
     // Preestablecer el usuario admin con contraseña admin si no existe
     await _prepopulateAdminUser(db);
     await _prepopulateLabs(db);
-    await prepopulateReservations(db);
+    await _prepopulateReservations(db);
 
     return db;
   }
@@ -110,6 +110,12 @@ class DatabaseHelper {
     return db.insert('notes', note.toMap());
   }
 
+  Future<int> createReservation(ReservationModel reservation) async {
+    final Database db = await initDB();
+    return db.insert('reservations', reservation.toMap());
+  }
+
+
   //Get notes
   Future<List<NoteModel>> getNotes() async {
     final Database db = await initDB();
@@ -173,45 +179,55 @@ class DatabaseHelper {
     return result.map((e) => LabModel.fromMap(e)).toList();
   }
 
-  Future<void> prepopulateReservations(Database db) async {
-    // Obtener una lista de IDs de laboratorio existentes (en este caso, 1 y 2)
-    final labIds = [1, 2];
+  Future<void> _prepopulateReservations(Database db) async {
+    // Define los detalles de la reserva manualmente
+    final manualReservation = {
+      'date': DateTime.now().toIso8601String(),
+      'time': '09:00', // Hora de la reserva
+      'durationHours': 2, // Duración en horas de la reserva
+      'labId': 1, // ID del laboratorio
+    };
 
-    // Definir las horas disponibles para las reservaciones (ejemplo: de 9:00 AM a 6:00 PM)
-    final availableHours = List.generate(9, (index) => index + 9); // 9:00 AM - 5:00 PM
+    // Inserta la reserva en la base de datos
+    await db.insert('reservations', manualReservation);
 
-    // Generar reservaciones para cada laboratorio
-    for (int labId in labIds) {
-      // Generar 5 reservaciones por laboratorio
-      for (int i = 0; i < 5; i++) {
-        // Seleccionar una fecha aleatoria dentro de los próximos 7 días
-        final randomDate = DateTime.now().add(Duration(days: Random().nextInt(7)));
-
-        // Seleccionar una hora aleatoria dentro del rango disponible
-        final randomHour = availableHours[Random().nextInt(availableHours.length)];
-
-        // Crear la fecha y hora de la reserva
-        final reservationDate = DateTime(randomDate.year, randomDate.month, randomDate.day, randomHour);
-
-        // Calcular la duración de la reserva (ejemplo: 2 horas)
-        final durationHours = Random().nextInt(3) + 1; // Duración de 1 a 3 horas
-
-        // Insertar la reservación en la base de datos
-        await db.insert('reservations', {
-          'date': reservationDate.toIso8601String(),
-          'time': reservationDate.hour.toString() + ':00', // Formato de hora: 'HH:00'
-          'durationHours': durationHours,
-          'labId': labId,
-        });
-      }
-    }
+    print('Se ha generado una nueva reserva manualmente.');
   }
 
-  Future<List<ReservationModel>> getReservationsByLabId(int labId) async {
+  Future<List<ReservationModel>> getReservationsByLabIdAndDate(int labId, DateTime date) async {
     final Database db = await initDB();
-    List<Map<String, dynamic>> reservationsData = await db.rawQuery("SELECT * FROM reservations WHERE labId = ?", [labId]);
-    return reservationsData.map((e) => ReservationModel.fromMap(e)).toList();
+
+    final List<Map<String, dynamic>> result = await db.rawQuery(
+      'SELECT * FROM reservations WHERE labId = ? AND date(date) = date(?)', // Usamos date() para comparar solo la fecha sin la hora
+      [labId, date.toIso8601String()], // Convierte la fecha a formato ISO8601 para compararla con la base de datos
+    );
+
+    // Agrega impresiones para ver el resultado de la consulta
+    print('Resultado de la consulta SQL: $result');
+
+    // Mapea los resultados de la consulta a objetos ReservationModel
+    return result.map((e) => ReservationModel.fromMap(e)).toList();
   }
+
+  Future<void> addReservation({
+    required DateTime date,
+    required String time,
+    required int durationHours,
+    required int labId,
+  }) async {
+    final Database db = await initDB();
+
+    // Insertar la reserva en la base de datos
+    await db.insert('reservations', {
+      'date': date.toIso8601String(),
+      'time': time,
+      'durationHours': durationHours,
+      'labId': labId,
+    });
+
+    print('Se ha agregado una nueva reserva a la base de datos.');
+  }
+
 
 
 }

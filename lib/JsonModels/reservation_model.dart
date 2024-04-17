@@ -34,24 +34,23 @@ class ReservationModel {
   }
 
   factory ReservationModel.fromMap(Map<String, dynamic> map) {
-    final currentTime = DateTime.now();
     final timeComponents = map['time'].split(':');
     final hour = int.parse(timeComponents[0]);
     final minute = int.parse(timeComponents[1]);
 
-    // Combina la fecha actual con la hora proporcionada
-    final dateTime = DateTime(currentTime.year, currentTime.month, currentTime.day, hour, minute);
+    // Utiliza la fecha almacenada en la base de datos sin combinarla con la fecha actual
+    final dateTime = DateTime.parse(map['date']).add(Duration(hours: hour, minutes: minute));
 
     return ReservationModel(
       id: map['id'],
-      date: DateTime.parse(map['date']),
-      time: TimeOfDay.fromDateTime(dateTime),
+      date: dateTime,
+      time: TimeOfDay(hour: hour, minute: minute),
       durationHours: map['durationHours'],
       labId: map['labId'],
     );
   }
 
-  Map<String, dynamic> toJson() {
+  Map<String, dynamic> toMap() {
     return {
       'id': id,
       'date': date.toIso8601String(),

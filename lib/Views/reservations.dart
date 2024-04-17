@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lab_ce/JsonModels/loan_model.dart';
 import 'package:lab_ce/SQLite/sqlite.dart';
-import 'package:lab_ce/Views/create_reservation.dart';
+import 'package:lab_ce/Views/create_reservations.dart';
 
 class Notes extends StatefulWidget {
   const Notes({super.key});
