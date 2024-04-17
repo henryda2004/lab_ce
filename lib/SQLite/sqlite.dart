@@ -1,9 +1,9 @@
 import 'dart:math';
-
+import 'package:lab_ce/JsonModels/reservation_model.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:lab_ce/JsonModels/reservation_model.dart';
-
+import 'package:lab_ce/JsonModels/loan_model.dart';
+import 'package:lab_ce/JsonModels/lab_model.dart';
 import '../JsonModels/users_model.dart';
 
 class DatabaseHelper {
@@ -11,26 +11,39 @@ class DatabaseHelper {
   String noteTable =
       "CREATE TABLE notes (noteId INTEGER PRIMARY KEY AUTOINCREMENT, noteTitle TEXT NOT NULL, noteContent TEXT NOT NULL, createdAt TEXT DEFAULT CURRENT_TIMESTAMP)";
 
-  //Now we must create our user table into our sqlite db
-
   String users =
       "create table users (usrId INTEGER PRIMARY KEY AUTOINCREMENT, usrName TEXT UNIQUE, usrPassword TEXT)";
+
+  String labsTable =
+      "CREATE TABLE labs (labId INTEGER PRIMARY KEY AUTOINCREMENT, labName TEXT UNIQUE NOT NULL, capacity INTEGER NOT NULL, computers INTEGER NOT NULL, otherAssets TEXT NOT NULL, facilities TEXT NOT NULL)";
+
+  String reservationsTable = "CREATE TABLE reservations ("
+      "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+      "date TEXT NOT NULL,"
+      "time TEXT NOT NULL,"
+      "durationHours INTEGER NOT NULL,"
+      "labId INTEGER NOT NULL,"
+      "FOREIGN KEY (labId) REFERENCES labs (labId)"
+      ")";
+
 
   //We are done in this section
 
   Future<Database> initDB() async {
     final databasePath = await getDatabasesPath();
     final path = join(databasePath, databaseName);
-    final bool databaseExists = await databaseFactory.databaseExists(path);
-
 
     final Database db = await openDatabase(path, version: 1, onCreate: (db, version) async {
       await db.execute(users);
       await db.execute(noteTable);
+      await db.execute(labsTable);
+      await db.execute(reservationsTable);
     });
 
     // Preestablecer el usuario admin con contraseña admin si no existe
     await _prepopulateAdminUser(db);
+    await _prepopulateLabs(db);
+    await prepopulateReservations(db);
 
     return db;
   }
@@ -41,6 +54,32 @@ class DatabaseHelper {
       await db.insert('users', {'usrName': 'admin1', 'usrPassword': 'admin'});
     }
   }
+
+  Future<void> _prepopulateLabs(Database db) async {
+    final List<Map<String, dynamic>> labsData = await db.rawQuery("SELECT * FROM labs WHERE labName = 'F2-07'");
+    if (labsData.isEmpty) {
+      await db.insert('labs', {
+        'labName': 'F2-07',
+        'capacity': 30,
+        'computers': 15,
+        'otherAssets': 'Proyector',
+        'facilities': 'Proyector hacia la pizzarra y pared posterior'
+      });
+    }
+
+    final List<Map<String, dynamic>> labsData2 = await db.rawQuery("SELECT * FROM labs WHERE labName = 'F2-08'");
+    if (labsData2.isEmpty) {
+      await db.insert('labs', {
+        'labName': 'F2-08',
+        'capacity': 14,
+        'computers': 14,
+        'otherAssets': 'Proyector',
+        'facilities': 'Equipo de laboratorio'
+      });
+    }
+  }
+
+
 
   Future<bool> login(Users user) async {
     final Database db = await initDB();
@@ -55,12 +94,6 @@ class DatabaseHelper {
     }
   }
 
-  //Sign up
-  Future<int> signup(Users user) async {
-    final Database db = await initDB();
-
-    return db.insert('users', user.toMap());
-  }
 
   Future<List<NoteModel>> searchNotes(String keyword) async {
     final Database db = await initDB();
@@ -133,5 +166,52 @@ class DatabaseHelper {
     // Si el resultado contiene al menos un elemento, significa que el usuario existe
     return result.isNotEmpty;
   }
+
+  Future<List<LabModel>> getLabs() async {
+    final Database db = await initDB();
+    List<Map<String, Object?>> result = await db.query('labs');
+    return result.map((e) => LabModel.fromMap(e)).toList();
+  }
+
+  Future<void> prepopulateReservations(Database db) async {
+    // Obtener una lista de IDs de laboratorio existentes (en este caso, 1 y 2)
+    final labIds = [1, 2];
+
+    // Definir las horas disponibles para las reservaciones (ejemplo: de 9:00 AM a 6:00 PM)
+    final availableHours = List.generate(9, (index) => index + 9); // 9:00 AM - 5:00 PM
+
+    // Generar reservaciones para cada laboratorio
+    for (int labId in labIds) {
+      // Generar 5 reservaciones por laboratorio
+      for (int i = 0; i < 5; i++) {
+        // Seleccionar una fecha aleatoria dentro de los próximos 7 días
+        final randomDate = DateTime.now().add(Duration(days: Random().nextInt(7)));
+
+        // Seleccionar una hora aleatoria dentro del rango disponible
+        final randomHour = availableHours[Random().nextInt(availableHours.length)];
+
+        // Crear la fecha y hora de la reserva
+        final reservationDate = DateTime(randomDate.year, randomDate.month, randomDate.day, randomHour);
+
+        // Calcular la duración de la reserva (ejemplo: 2 horas)
+        final durationHours = Random().nextInt(3) + 1; // Duración de 1 a 3 horas
+
+        // Insertar la reservación en la base de datos
+        await db.insert('reservations', {
+          'date': reservationDate.toIso8601String(),
+          'time': reservationDate.hour.toString() + ':00', // Formato de hora: 'HH:00'
+          'durationHours': durationHours,
+          'labId': labId,
+        });
+      }
+    }
+  }
+
+  Future<List<ReservationModel>> getReservationsByLabId(int labId) async {
+    final Database db = await initDB();
+    List<Map<String, dynamic>> reservationsData = await db.rawQuery("SELECT * FROM reservations WHERE labId = ?", [labId]);
+    return reservationsData.map((e) => ReservationModel.fromMap(e)).toList();
+  }
+
 
 }
