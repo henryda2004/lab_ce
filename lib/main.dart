@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lab_ce/Views//login.dart';
-import 'package:lab_ce/Views//reservations.dart';
 import 'package:lab_ce/Views/labs.dart';
+import 'package:lab_ce/Views/loan.dart';
 import 'package:lab_ce/Views/menu.dart';
 
 
@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const Labs(),
+      home: const login(),
     );
   }
 }

@@ -6,6 +6,8 @@ class ReservationModel {
   final TimeOfDay time;
   final int durationHours;
   final int labId;
+  final String description;
+  final String usuario; // Nuevo campo
 
   ReservationModel({
     required this.id,
@@ -13,6 +15,8 @@ class ReservationModel {
     required this.time,
     required this.durationHours,
     required this.labId,
+    required this.description,
+    required this.usuario, // Nuevo campo
   });
 
   factory ReservationModel.fromJson(Map<String, dynamic> json) {
@@ -30,6 +34,8 @@ class ReservationModel {
       time: TimeOfDay.fromDateTime(dateTime),
       durationHours: json['durationHours'],
       labId: json['labId'],
+      description: json['description'],
+      usuario: json['usuario'], // Nuevo campo
     );
   }
 
@@ -47,6 +53,8 @@ class ReservationModel {
       time: TimeOfDay(hour: hour, minute: minute),
       durationHours: map['durationHours'],
       labId: map['labId'],
+      description: map['description'],
+      usuario: map['usuario'], // Nuevo campo
     );
   }
 
@@ -57,6 +65,8 @@ class ReservationModel {
       'time': '${time.hour}:${time.minute}',
       'durationHours': durationHours,
       'labId': labId,
+      'description': description,
+      'usuario': usuario, // Nuevo campo
     };
   }
 }

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:lab_ce/JsonModels/lab_model.dart'; // Importa el modelo de laboratorio
+import 'package:lab_ce/JsonModels/users_model.dart';
 import 'package:lab_ce/SQLite/sqlite.dart';
 import 'package:lab_ce/Views/reservation.dart'; // Importa el helper de la base de datos
 
 class Labs extends StatefulWidget {
-  const Labs({Key? key}) : super(key: key);
+  final Users user;
+
+  const Labs({Key? key, required this.user}) : super(key: key);
 
   @override
   State<Labs> createState() => _LabsState();
@@ -60,7 +63,7 @@ class _LabsState extends State<Labs> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => Reservation(labId: items[index].labId ?? 0),
+                            builder: (context) => Reservation(labId: items[index].labId ?? 0, user: widget.user),
                           ),
                         );
                       },

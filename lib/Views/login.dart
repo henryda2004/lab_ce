@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lab_ce/Views/menu.dart';
 import 'package:lab_ce/Views/reset_password.dart';
-import 'package:lab_ce/Views/reservations.dart';
 import 'package:lab_ce/JsonModels/users_model.dart';
 import 'package:lab_ce/SQLite/sqlite.dart';
 class login extends StatefulWidget {
@@ -22,10 +22,11 @@ class _loginState extends State<login> {
     var response = await db
         .login(Users(usrName: username.text, usrPassword: password.text));
     if (response == true) {
+      Users user = await db.getUserByUsername(username.text);
       //If login is correct, then goto notes
       if (!mounted) return;
       Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (context) => const Notes()));
+          context, MaterialPageRoute(builder: (context) => Menu(user: user)));
     } else {
       //If not, true the bool value to show error message
       setState(() {

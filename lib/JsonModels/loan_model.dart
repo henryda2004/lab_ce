@@ -1,27 +1,43 @@
-class NoteModel {
-  final int? noteId;
-  final String noteTitle;
-  final String noteContent;
-  final String createdAt;
+class LoanModel {
+  final String asset;
+  final String name;
+  final String lastName1;
+  final String lastName2;
+  final String email;
+  final DateTime dateTime;
+  final int approved;
 
-  NoteModel({
-    this.noteId,
-    required this.noteTitle,
-    required this.noteContent,
-    required this.createdAt,
+  LoanModel({
+    required this.asset,
+    required this.name,
+    required this.lastName1,
+    required this.lastName2,
+    required this.email,
+    required this.dateTime,
+    required this.approved,
   });
 
-  factory NoteModel.fromMap(Map<String, dynamic> json) => NoteModel(
-    noteId: json["noteId"],
-    noteTitle: json["noteTitle"],
-    noteContent: json["noteContent"],
-    createdAt: json["createdAt"],
-  );
+  factory LoanModel.fromMap(Map<String, dynamic> json) {
+    return LoanModel(
+      asset: json['asset'],
+      name: json['name'],
+      lastName1: json['lastName1'],
+      lastName2: json['lastName2'],
+      email: json['email'],
+      dateTime: DateTime.parse(json['dateTime']),
+      approved: json['approved'],
+    );
+  }
 
-  Map<String, dynamic> toMap() => {
-    "noteId": noteId,
-    "noteTitle": noteTitle,
-    "noteContent": noteContent,
-    "createdAt": createdAt,
-  };
+  Map<String, dynamic> toMap() {
+    return {
+      'asset': asset,
+      'name': name,
+      'lastName1': lastName1,
+      'lastName2': lastName2,
+      'email': email,
+      'dateTime': dateTime.toIso8601String(),
+      'approved': approved,
+    };
+  }
 }

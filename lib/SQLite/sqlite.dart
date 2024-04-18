@@ -1,8 +1,8 @@
 import 'dart:math';
+import 'package:lab_ce/JsonModels/loan_model.dart';
 import 'package:lab_ce/JsonModels/reservation_model.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:lab_ce/JsonModels/loan_model.dart';
 import 'package:lab_ce/JsonModels/lab_model.dart';
 import '../JsonModels/users_model.dart';
 
@@ -23,7 +23,20 @@ class DatabaseHelper {
       "time TEXT NOT NULL,"
       "durationHours INTEGER NOT NULL,"
       "labId INTEGER NOT NULL,"
+      "description TEXT NOT NULL," // Nuevo campo
+      "usuario TEXT NOT NULL," // Nuevo campo
       "FOREIGN KEY (labId) REFERENCES labs (labId)"
+      ")";
+
+  String loansTable = "CREATE TABLE loans ("
+      "id INTEGER PRIMARY KEY AUTOINCREMENT,"
+      "asset TEXT NOT NULL,"
+      "name TEXT NOT NULL,"
+      "lastName1 TEXT NOT NULL,"
+      "lastName2 TEXT NOT NULL,"
+      "email TEXT NOT NULL,"
+      "dateTime TEXT NOT NULL,"
+      "approved INTEGER NOT NULL"
       ")";
 
 
@@ -38,12 +51,13 @@ class DatabaseHelper {
       await db.execute(noteTable);
       await db.execute(labsTable);
       await db.execute(reservationsTable);
+      await db.execute(loansTable);
     });
 
     // Preestablecer el usuario admin con contraseña admin si no existe
     await _prepopulateAdminUser(db);
     await _prepopulateLabs(db);
-    await _prepopulateReservations(db);
+    await _prepopulateLoans(db);
 
     return db;
   }
@@ -79,7 +93,43 @@ class DatabaseHelper {
     }
   }
 
+  Future<void> _prepopulateLoans(Database db) async {
+    // Genera tres préstamos de ejemplo
+    final loans = [
+      LoanModel(
+        asset: 'Laptop',
+        name: 'John',
+        lastName1: 'Doe',
+        lastName2: '',
+        email: 'john.doe@example.com',
+        dateTime: DateTime.now(),
+        approved: 0,
+      ),
+      LoanModel(
+        asset: 'Proyector',
+        name: 'Jane',
+        lastName1: 'Smith',
+        lastName2: '',
+        email: 'jane.smith@example.com',
+        dateTime: DateTime.now().add(Duration(days: 1)),
+        approved: 0,
+      ),
+      LoanModel(
+        asset: 'Microscopio',
+        name: 'Alice',
+        lastName1: 'Johnson',
+        lastName2: '',
+        email: 'alice.johnson@example.com',
+        dateTime: DateTime.now().add(Duration(days: 2)),
+        approved: 1,
+      ),
+    ];
 
+    // Inserta los préstamos en la base de datos
+    for (final loan in loans) {
+      await db.insert('loans', loan.toMap());
+    }
+  }
 
   Future<bool> login(Users user) async {
     final Database db = await initDB();
@@ -94,21 +144,8 @@ class DatabaseHelper {
     }
   }
 
-
-  Future<List<NoteModel>> searchNotes(String keyword) async {
-    final Database db = await initDB();
-    List<Map<String, Object?>> searchResult = await db
-        .rawQuery("select * from notes where noteTitle LIKE ?", ["%$keyword%"]);
-    return searchResult.map((e) => NoteModel.fromMap(e)).toList();
-  }
-
   //CRUD Methods
 
-  //Create Note
-  Future<int> createNote(NoteModel note) async {
-    final Database db = await initDB();
-    return db.insert('notes', note.toMap());
-  }
 
   Future<int> createReservation(ReservationModel reservation) async {
     final Database db = await initDB();
@@ -116,26 +153,6 @@ class DatabaseHelper {
   }
 
 
-  //Get notes
-  Future<List<NoteModel>> getNotes() async {
-    final Database db = await initDB();
-    List<Map<String, Object?>> result = await db.query('notes');
-    return result.map((e) => NoteModel.fromMap(e)).toList();
-  }
-
-  //Delete Notes
-  Future<int> deleteNote(int id) async {
-    final Database db = await initDB();
-    return db.delete('notes', where: 'noteId = ?', whereArgs: [id]);
-  }
-
-  //Update Notes
-  Future<int> updateNote(title, content, noteId) async {
-    final Database db = await initDB();
-    return db.rawUpdate(
-        'update notes set noteTitle = ?, noteContent = ? where noteId = ?',
-        [title, content, noteId]);
-  }
 
   String _generateRandomPassword() {
     const allowedChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -179,20 +196,7 @@ class DatabaseHelper {
     return result.map((e) => LabModel.fromMap(e)).toList();
   }
 
-  Future<void> _prepopulateReservations(Database db) async {
-    // Define los detalles de la reserva manualmente
-    final manualReservation = {
-      'date': DateTime.now().toIso8601String(),
-      'time': '09:00', // Hora de la reserva
-      'durationHours': 2, // Duración en horas de la reserva
-      'labId': 1, // ID del laboratorio
-    };
 
-    // Inserta la reserva en la base de datos
-    await db.insert('reservations', manualReservation);
-
-    print('Se ha generado una nueva reserva manualmente.');
-  }
 
   Future<List<ReservationModel>> getReservationsByLabIdAndDate(int labId, DateTime date) async {
     final Database db = await initDB();
@@ -214,6 +218,8 @@ class DatabaseHelper {
     required String time,
     required int durationHours,
     required int labId,
+    required String description,
+    required String usuario,
   }) async {
     final Database db = await initDB();
 
@@ -223,11 +229,56 @@ class DatabaseHelper {
       'time': time,
       'durationHours': durationHours,
       'labId': labId,
+      'description': description, // Nuevo campo
+      'usuario': usuario, // Nuevo campo
     });
 
     print('Se ha agregado una nueva reserva a la base de datos.');
   }
 
+  Future<List<LoanModel>> getLoans() async {
+    final Database db = await initDB();
+    List<Map<String, Object?>> result = await db.query('loans');
+    return result.map((e) => LoanModel.fromMap(e)).toList();
+  }
 
+  Future<Map<int, LoanModel>> getLoansWithApprovedFalse() async {
+    final Database db = await initDB();
+
+    // Realizar la consulta para obtener los préstamos no aprobados
+    final List<Map<String, dynamic>> result = await db.rawQuery(
+      'SELECT * FROM loans WHERE approved = ?',
+      [0], // 0 representa false para un valor booleano en SQLite
+    );
+
+    // Mapear los resultados de la consulta a objetos LoanModel
+    // Usar un mapa para almacenar los préstamos con sus IDs correspondientes
+    final Map<int, LoanModel> loans = {};
+    for (final loanData in result) {
+      final loan = LoanModel.fromMap(loanData);
+      loans[loanData['id'] as int] = loan;
+    }
+
+    return loans;
+  }
+
+  Future<void> updateApprovalStatus(int loanId, int approvalStatus) async {
+    final db = await initDB();
+    await db.rawUpdate('UPDATE loans SET approved = ? WHERE id = ?', [approvalStatus, loanId]);
+  }
+
+  Future<Users> getUserByUsername(String username) async {
+    final Database db = await initDB();
+    List<Map<String, dynamic>> result = await db.query(
+      'users',
+      where: 'usrName = ?',
+      whereArgs: [username],
+    );
+    if (result.isNotEmpty) {
+      return Users.fromMap(result.first);
+    } else {
+      throw Exception('Usuario no encontrado');
+    }
+  }
 
 }

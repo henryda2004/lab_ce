@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:lab_ce/JsonModels/users_model.dart';
 import 'package:lab_ce/SQLite/sqlite.dart';
+import 'package:lab_ce/Views/labs.dart';
+import 'package:lab_ce/Views/loan.dart';
 import 'package:lab_ce/Views/login.dart';
 
 class Menu extends StatelessWidget {
+  final Users user;
+
+  const Menu({Key? key, required this.user}) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,7 +43,11 @@ class Menu extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
-                      // Acción al presionar el botón de reservación
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => Labs(user: user,), // Navega a la vista Loan
+                        ),
+                      );
                     },
                     icon: Icon(Icons.calendar_today, size: 48, color: Color(0xFF4B468F)),
                     label: Text(
@@ -61,8 +71,11 @@ class Menu extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
-                      // Acción al presionar el botón de préstamo
-                    },
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => Loan(), // Navega a la vista Loan
+                        ),
+                      );                    },
                     icon: Icon(Icons.computer, size: 48, color: Color(0xFF4B468F)),
                     label: Text(
                       'Préstamo',

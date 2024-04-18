@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lab_ce/JsonModels/reservation_model.dart';
+import 'package:lab_ce/JsonModels/users_model.dart';
 import 'package:lab_ce/SQLite/sqlite.dart';
 
 class CreateReservation extends StatefulWidget {
   final int labId;
+  final Users user; // Agrega el usuario como parámetro
 
-
-  const CreateReservation({Key? key, required this.labId}) : super(key: key);
+  const CreateReservation({Key? key, required this.labId, required this.user}) : super(key: key);
 
   @override
   _CreateReservationState createState() => _CreateReservationState();
@@ -17,6 +18,7 @@ class _CreateReservationState extends State<CreateReservation> {
   late DateTime _selectedDate;
   late TimeOfDay _selectedTime;
   late int _selectedDuration;
+  late String _description;
   final DatabaseHelper dbHelper = DatabaseHelper();
   @override
   void initState() {
@@ -24,6 +26,7 @@ class _CreateReservationState extends State<CreateReservation> {
     _selectedDate = DateTime.now();
     _selectedTime = TimeOfDay.now();
     _selectedDuration = 1;
+    _description = '';
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -58,7 +61,8 @@ class _CreateReservationState extends State<CreateReservation> {
       appBar: AppBar(
         title: Text('Crear Reserva'),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
+        child: Padding(
         padding: EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,14 +119,31 @@ class _CreateReservationState extends State<CreateReservation> {
               }).toList(),
             ),
             SizedBox(height: 16.0),
+            Text(
+              'Descripción:',
+              style: TextStyle(fontSize: 18.0),
+            ),
+            SizedBox(height: 8.0),
+            TextFormField(
+              onChanged: (value) {
+                setState(() {
+                  _description = value;
+                });
+              },
+              decoration: InputDecoration(
+                hintText: 'Ingrese una descripción',
+              ),
+            ),
             Center(
               child: ElevatedButton(
                 onPressed: _createReservation,
                 child: Text('Crear Reserva'),
+
               ),
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -136,30 +157,20 @@ class _CreateReservationState extends State<CreateReservation> {
       _selectedTime.minute,
     );
 
-    // Call addReservation to save the reservation
+    // Formatea la hora seleccionada
+    final selectedTimeFormatted = '${_selectedTime.hour}:${_selectedTime.minute}';
+
+    // Llama a addReservation para guardar la reserva
     await dbHelper.addReservation(
       date: selectedDateTime,
-      time: _selectedTime.format(context), // assuming format is needed
+      time: selectedTimeFormatted,
       durationHours: _selectedDuration,
       labId: widget.labId,
+      description: _description,
+      usuario: widget.user.usrName,
     );
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Reserva Creada'),
-          content: Text('La reserva ha sido creada exitosamente.'),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Cerrar'),
-            ),
-          ],
-        );
-      },
-    );
+    Navigator.pop(context, true);
+
   }
 }
